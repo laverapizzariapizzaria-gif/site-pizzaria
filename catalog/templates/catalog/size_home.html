@@ -1,0 +1,205 @@
+<!doctype html>
+{% load static %}
+
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Escolher tamanho</title>
+  <style>
+    :root{
+  --bg:#0b1612;
+  --card:#0f221a;
+  --card2:#12271e;
+  --line:rgba(243,231,199,.14);
+  --muted:#d9cfb6;
+  --text:#ffffff;
+  --cream:#f3e7c7;
+  --gold:#c9a24a;
+  --accent:#c21f2c;   /* vermelho */
+  --green:#1b7a3a;    /* verde */
+  --btn:#1a2d23;
+  --btn2:#223b2d;
+  --danger:#b51d2c;
+}
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:radial-gradient(1200px 800px at 10% 0%, #1a1a1a 0%, var(--bg) 55%); color:#fff; }
+    .wrap{ max-width:900px; margin:0 auto; padding:28px 16px 40px; }
+    .card{ background:rgba(18,18,18,.92); border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px; box-shadow:0 18px 60px rgba(0,0,0,.45); animation: fadeSlideIn .55s ease-out both; }
+    h1{ margin:0 0 8px; font-size:30px; letter-spacing:.2px; }
+    p{ margin:0 0 18px; color:var(--muted); }
+    .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    @media (max-width:700px){ .grid{ grid-template-columns:1fr; } }
+    button{ width:100%; padding:18px 14px; border-radius:16px; border:1px solid rgba(255,255,255,.10); background:linear-gradient(180deg, var(--btn2), var(--btn)); color:#fff; cursor:pointer; text-align:left; display:flex; align-items:center; justify-content:space-between; }
+    button:hover{ filter:brightness(1.08); }
+    /* pílula de informação (fatias) */
+    .slices{ font-size:12px; padding:5px 10px; border-radius:999px; border:1px solid rgba(243,231,199,.22); color:rgba(243,231,199,.95); background:rgba(0,0,0,.18); white-space:nowrap; }
+    .big{ font-size:22px; font-weight:800; }
+    .small{ font-size:13px; color:var(--muted); }
+    .foot{ margin-top:14px; font-size:12px; color:rgba(255,255,255,.55); }
+
+    /* ===== BOAS-VINDAS (ANIMAÇÃO SUAVE) ===== */
+    .welcome-box{ text-align:center; margin: 2px 0 14px; padding: 0 10px; animation: fadeSlideIn .7s ease-out both; }
+    .time-greet{ display:inline-flex; align-items:center; gap:8px; justify-content:center; font-weight:800; letter-spacing:.3px; color: rgba(255,255,255,.92); margin-bottom: 10px; }
+    .time-greet .dot{ width:8px; height:8px; border-radius:999px; background: var(--gold); box-shadow: 0 0 18px rgba(201,162,74,.45); }
+    .welcome-box h2{ margin: 0 0 8px; font-size: 28px; color: var(--gold); font-weight: 800; letter-spacing: .6px; }
+    .welcome-box p{ margin: 0 auto; max-width: 640px; font-size: 16px; line-height: 1.65; color: rgba(255,255,255,.92); opacity: .96; }
+    .welcome-tagline{ margin-top:10px; font-size:13px; color: rgba(243,231,199,.95); letter-spacing: .7px; text-transform: uppercase; }
+    .pizza-icon{ display:inline-block; margin-left: 6px; transform-origin: 50% 65%; animation: pizzaWiggle 1.6s ease-in-out infinite; }
+    @keyframes pizzaWiggle{
+      0%,100%{ transform: translateY(0) rotate(0deg) scale(1); }
+      25%{ transform: translateY(-2px) rotate(-6deg) scale(1.03); }
+      55%{ transform: translateY(0) rotate(7deg) scale(1.02); }
+      75%{ transform: translateY(-1px) rotate(-3deg) scale(1.01); }
+    }
+
+    @keyframes fadeSlideIn{
+      from{ opacity:0; transform: translateY(14px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+  
+/* ===== FUNDO PREMIUM COM LOGO (MARCA D'ÁGUA) ===== */
+html{ background: var(--bg); }
+body{ position:relative; min-height:100vh; background: var(--bg) !important; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: url("{% static 'catalog/images/logo.jpg' %}") center center / 420px no-repeat;
+  opacity:.07;
+  filter: saturate(1.05) contrast(1.05);
+  pointer-events:none;
+  z-index:-2;
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201,162,74,.10), transparent 55%),
+    radial-gradient(circle at 50% 72%, rgba(194,31,44,.08), transparent 55%),
+    rgba(5,12,8,0.90);
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes watermarkPulse{
+  0%,100%{ transform:scale(1); opacity:.06; }
+  50%{ transform:scale(1.03); opacity:.085; }
+}
+@media (max-width: 768px){
+  body::before{ background-size: 260px; }
+}
+
+/* ===== BARRA DE PROGRESSO (Tamanho → Sabores → Carrinho → Confirmação) ===== */
+.progress{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin: 0 0 16px; padding: 10px 12px; border:1px solid rgba(255,255,255,.08); border-radius: 14px; background: rgba(0,0,0,.18); }
+.step{ flex:1; display:flex; align-items:center; gap:10px; min-width:0; }
+.step .n{ width:26px; height:26px; border-radius:999px; display:grid; place-items:center; font-weight:900; background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.85); }
+.step .t{ font-size:12px; color: rgba(255,255,255,.70); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.step.active .n{ background: rgba(201,162,74,.20); border-color: rgba(201,162,74,.55); color: var(--cream); box-shadow: 0 0 18px rgba(201,162,74,.18); }
+.step.active .t{ color: rgba(255,255,255,.92); font-weight:800; }
+.divider{ width:100%; height:2px; background: rgba(255,255,255,.08); border-radius:999px; margin: 0 10px; }
+@media (max-width:700px){
+  .divider{ display:none; }
+  .progress{ flex-wrap:wrap; }
+  .step{ flex: 1 1 46%; }
+}
+
+
+
+/* ===== MOBILE APP FEEL (evita "dançar" no iOS e melhora centralização) ===== */
+html, body{ overflow-x:hidden; }
+body{ min-height:100vh; }
+@supports (height: 100dvh){ body{ min-height:100dvh; } }
+
+/* iOS Safari não lida bem com background FIXO + animação; isso causa "pulos" ao rolar */
+@media (max-width: 1024px){
+  body::before, body::after{ position:absolute; }
+  body::before{ animation:none !important; }
+}
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="progress" aria-label="Progresso do pedido">
+        <div class="step active"><div class="n">1</div><div class="t">Tamanho</div></div>
+        <div class="divider"></div>
+        <div class="step"><div class="n">2</div><div class="t">Sabores</div></div>
+        <div class="divider"></div>
+        <div class="step"><div class="n">3</div><div class="t">Carrinho</div></div>
+        <div class="divider"></div>
+        <div class="step"><div class="n">4</div><div class="t">Confirmação</div></div>
+      </div>
+
+      <div class="welcome-box">
+        <div id="timeGreeting" class="time-greet"><span class="dot"></span>Carregando...</div>
+        <h2>Bem-vindo à La Vera Pizzaria <span class="pizza-icon">🍕</span></h2>
+        <p>
+          O verdadeiro sabor da pizza artesanal, feita com paixão e ingredientes selecionados.<br>
+          Escolha o tamanho da sua pizza e monte do seu jeito.
+        </p>
+        <div class="welcome-tagline">O delivery que faltava em São Joaquim</div>
+      </div>
+
+      <h1>Escolha o tamanho</h1>
+      <p>Escolha P, M, G ou BIG. Depois você vai para o cardápio já com esse tamanho selecionado.</p>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="grid">
+          <button type="submit" name="size" value="P">
+            <div>
+              <div class="big">P</div>
+              <div class="small">Pequena</div>
+            </div>
+            <span class="slices">6 fatias</span>
+          </button>
+
+          <button type="submit" name="size" value="M">
+            <div>
+              <div class="big">M</div>
+              <div class="small">Média</div>
+            </div>
+            <span class="slices">8 fatias</span>
+          </button>
+
+          <button type="submit" name="size" value="G">
+            <div>
+              <div class="big">G</div>
+              <div class="small">Grande</div>
+            </div>
+            <span class="slices">12 fatias</span>
+          </button>
+
+          <button type="submit" name="size" value="BIG">
+            <div>
+              <div class="big">BIG</div>
+              <div class="small">Big</div>
+            </div>
+            <span class="slices">16 fatias</span>
+          </button>
+        </div>
+      </form>
+
+      <div class="foot">Você pode trocar o tamanho depois voltando nesta tela.</div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const el = document.getElementById('timeGreeting');
+      if(!el) return;
+
+      const h = new Date().getHours();
+      let txt = 'Bem-vindo!';
+      if(h >= 5 && h < 12) txt = 'Bom dia!';
+      else if(h >= 12 && h < 18) txt = 'Boa tarde!';
+      else txt = 'Boa noite!';
+
+      el.innerHTML = `<span class="dot"></span>${txt}`;
+    })();
+  </script>
+</body>
+</html>

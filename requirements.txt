@@ -1,0 +1,16 @@
+asgiref==3.11.0
+Django==6.0.1
+djangorestframework==3.16.1
+djangorestframework_simplejwt==5.5.1
+psycopg2-binary==2.9.11
+PyJWT==2.10.1
+sqlparse==0.5.5
+tzdata==2025.3
+openpyxl==3.1.5
+reportlab==4.2.5
+mercadopago
+
+gunicorn==22.0.0
+whitenoise==6.7.0
+dj-database-url==2.2.0
+python-decouple==3.8

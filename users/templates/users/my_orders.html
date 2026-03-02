@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <title>Meus pedidos</title>
+  <style>:root{
+  --bg:#0b1612;
+  --card:#0f221a;
+  --card2:#12271e;
+  --line:rgba(243,231,199,.14);
+  --muted:#d9cfb6;
+  --text:#ffffff;
+  --cream:#f3e7c7;
+  --gold:#c9a24a;
+  --accent:#c21f2c;   /* vermelho */
+  --green:#1b7a3a;    /* verde */
+  --btn:#1a2d23;
+  --btn2:#223b2d;
+  --danger:#b51d2c;
+}
+
+    body { font-family: Arial; background:var(--bg); color:#fff; padding:20px; }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    .top { display:flex; justify-content: space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .card { border:1px solid var(--line); border-radius:12px; padding:16px; margin:12px 0; background: rgba(255,255,255,0.02); }
+    a { color:#9ad; text-decoration:none; }
+    .muted { color:#aaa; font-size:13px; }
+    table { width:100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border-bottom: 1px solid #333; padding: 10px; text-align:left; }
+  
+/* ===== FUNDO PREMIUM COM LOGO (MARCA D'ÁGUA) ===== */
+html{ background: var(--bg); }
+body{ position:relative; min-height:100vh; background: var(--bg) !important; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: url("{% static 'catalog/images/logo.jpg' %}") center center / 420px no-repeat;
+  opacity:.07;
+  filter: saturate(1.05) contrast(1.05);
+  pointer-events:none;
+  z-index:-2;
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201,162,74,.10), transparent 55%),
+    radial-gradient(circle at 50% 72%, rgba(194,31,44,.08), transparent 55%),
+    rgba(5,12,8,0.90);
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes watermarkPulse{
+  0%,100%{ transform:scale(1); opacity:.06; }
+  50%{ transform:scale(1.03); opacity:.085; }
+}
+@media (max-width: 768px){
+  body::before{ background-size: 260px; }
+}
+
+
+
+/* ===== MOBILE APP FEEL (evita "dançar" no iOS e melhora centralização) ===== */
+html, body{ overflow-x:hidden; }
+body{ min-height:100vh; }
+@supports (height: 100dvh){ body{ min-height:100dvh; } }
+
+/* iOS Safari não lida bem com background FIXO + animação; isso causa "pulos" ao rolar */
+@media (max-width: 1024px){
+  body::before, body::after{ position:absolute; }
+  body::before{ animation:none !important; }
+}
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <h1>📦 Meus pedidos</h1>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <a href="/">🍕 Cardápio</a>
+        <form action="{% url 'logout' %}" method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" style="background:none;border:none;padding:0;color:#9ad;cursor:pointer;font:inherit;">
+            🚪 Sair
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="muted">Conta: {{ request.user.email|default:request.user.username }}</p>
+
+      {% if orders %}
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Status</th>
+            <th>Pagamento</th>
+            <th>Total</th>
+            <th>Data</th>
+            <th></th>
+          </tr>
+          {% for o in orders %}
+            <tr>
+              <td>{{ o.id }}</td>
+              <td>{{ o.get_status_display }}</td>
+              <td>{{ o.get_payment_method_display }}</td>
+              <td>R$ {{ o.total }}</td>
+              <td>{{ o.created_at }}</td>
+              <td><a href="/pedido/{{ o.id }}/">Ver</a></td>
+            </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <p>Você ainda não tem pedidos.</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

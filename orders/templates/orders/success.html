@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html>
+<head>
+  <title>Acompanhar pedido</title>
+  <!-- Atualiza automaticamente para refletir mudanças de status / pagamento -->
+  <meta http-equiv="refresh" content="20">
+  <style>
+    body {
+      font-family: Arial;
+      background: #111;
+      color: #fff;
+      padding: 20px;
+    }
+    .card {
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 14px;
+      margin: 12px 0;
+    }
+    a {
+      color: #9ad;
+    }
+  
+/* ===== FUNDO PREMIUM COM LOGO (MARCA D'ÁGUA) ===== */
+html{ background: var(--bg); }
+body{ position:relative; min-height:100vh; background: var(--bg) !important; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: url("{% static 'catalog/images/logo.jpg' %}") center center / 420px no-repeat;
+  opacity:.07;
+  filter: saturate(1.05) contrast(1.05);
+  pointer-events:none;
+  z-index:-2;
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201,162,74,.10), transparent 55%),
+    radial-gradient(circle at 50% 72%, rgba(194,31,44,.08), transparent 55%),
+    rgba(5,12,8,0.90);
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes watermarkPulse{
+  0%,100%{ transform:scale(1); opacity:.06; }
+  50%{ transform:scale(1.03); opacity:.085; }
+}
+@media (max-width: 768px){
+  body::before{ background-size: 260px; }
+}
+
+
+
+/* ===== MOBILE APP FEEL (evita "dançar" no iOS e melhora centralização) ===== */
+html, body{ overflow-x:hidden; }
+body{ min-height:100vh; }
+@supports (height: 100dvh){ body{ min-height:100dvh; } }
+
+/* iOS Safari não lida bem com background FIXO + animação; isso causa "pulos" ao rolar */
+@media (max-width: 1024px){
+  body::before, body::after{ position:absolute; }
+  body::before{ animation:none !important; }
+}
+
+</style>
+</head>
+<body>
+
+<h1>📦 Acompanhar pedido</h1>
+
+<div class="card">
+  <p><strong>Pedido:</strong> #{{ order.id }}</p>
+  <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+  <p><strong>Pagamento:</strong> {{ order.get_payment_method_display }}</p>
+  {% if order.payment_method == "PIX" %}
+    <p><strong>Status PIX:</strong> <span id="pixStatus">{{ order.mp_status|default:"pending" }}</span>{% if order.paid_at %} (Pago){% endif %}</p>
+    {% if not order.paid_at %}
+      <p><a href="{% url 'pix_payment' order.id %}" style="color:#0d6efd;">Abrir QR Code do PIX</a></p>
+    {% endif %}
+  {% endif %}
+  {% if order.payment_method == "DINHEIRO" and order.cash_change_for %}<p><strong>Troco para:</strong> R$ {{ order.cash_change_for }}</p>{% endif %}
+    <p><strong>Recebimento:</strong> {% if order.delivery_type == "RETIRADA" %}Retirada no balcão{% else %}Entrega{% endif %}</p>
+    {% if order.delivery_fee and order.delivery_fee > 0 %}<p><strong>Taxa de entrega:</strong> R$ {{ order.delivery_fee }}</p>{% endif %}
+  <p><strong>Recebimento:</strong> {{ order.get_delivery_type_display }}</p>
+  <p><strong>Total:</strong> R$ {{ order.total }}</p>
+  <p><strong>Data:</strong> {{ order.created_at }}</p>
+</div>
+
+{% if claim_link %}
+<div class="card">
+  <h3>👤 Sua conta foi criada</h3>
+  <p>Para salvar seus pedidos e acompanhar o histórico, basta definir sua senha:</p>
+  <p><a href="{{ claim_link }}" style="color:#facc15; font-weight:bold;">Definir senha da conta</a></p>
+  <p style="color:#aaa; font-size:13px;">Depois disso, você pode entrar pelo menu em “Entrar” e ver “Meus pedidos”.</p>
+</div>
+{% endif %}
+
+<div class="card">
+  <p><a href="/pedido/acompanhar/{{ order.public_token }}/">🔎 Acompanhar pedido</a></p>
+</div>
+
+<div class="card">
+  <h3>Itens</h3>
+  <ul>
+    {% for it in order.items.all %}
+      <li>{{ it.product_name }}{% if it.size_label %} ({{ it.size_label }}){% endif %} – {{ it.quantity }}x (R$ {{ it.unit_price }})</li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% if whatsapp_enabled %}
+  <div class="card">
+    <h3>WhatsApp</h3>
+
+    {% if whatsapp_store_link and whatsapp_store_configured %}
+      <p>
+        <a href="{{ whatsapp_store_link }}" target="_blank" rel="noopener" style="color:#25D366; font-weight:bold;">📲 Enviar mensagem para a pizzaria</a>
+      </p>
+    {% else %}
+      <p class="muted" style="color:#aaa;">WhatsApp da pizzaria não configurado. (Admin → Configurações do site)</p>
+    {% endif %}
+
+    {# Link de mensagem pronta (cliente) removido: era apenas para testes #}
+  </div>
+{% endif %}
+
+<a href="/">← Voltar ao cardápio</a>
+
+{% if order.payment_method == "PIX" and not order.paid_at %}
+<script>
+  // Atualiza o status do PIX sem precisar ficar dando F5
+  (function(){
+    const orderId = {{ order.id }};
+    const el = document.getElementById('pixStatus');
+    const url = `/api/pix/${orderId}/status/`;
+    const POLL_MS = 4000;
+
+    async function tick(){
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        const data = await res.json();
+        if (data && data.status && el) {
+          el.textContent = data.status;
+        }
+        // Se foi pago, recarrega para refletir "Pago" / mudanças no pedido
+        if (data && (data.paid === true || data.status === 'approved')) {
+          window.location.reload();
+        }
+      } catch(e) {}
+    }
+
+    setInterval(tick, POLL_MS);
+  })();
+</script>
+{% endif %}
+
+</body>
+</html>

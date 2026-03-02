@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Escolher tamanho</title>
+  <style>:root{
+  --bg:#0b1612;
+  --card:#0f221a;
+  --card2:#12271e;
+  --line:rgba(243,231,199,.14);
+  --muted:#d9cfb6;
+  --text:#ffffff;
+  --cream:#f3e7c7;
+  --gold:#c9a24a;
+  --accent:#c21f2c;   /* vermelho */
+  --green:#1b7a3a;    /* verde */
+  --btn:#1a2d23;
+  --btn2:#223b2d;
+  --danger:#b51d2c;
+}
+
+    body { font-family: Arial; background:var(--bg); color:#fff; padding:18px; }
+    .wrap { max-width:760px; margin:0 auto; }
+    .top { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .card { border:1px solid var(--line); border-radius:14px; padding:14px; margin:12px 0; background:rgba(255,255,255,0.02); }
+    a { color:var(--gold); text-decoration:none; }
+    .btn{ background:var(--accent); color:#fff; border:0; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:800; }
+.btn:hover{ filter:brightness(1.05);} 
+    .btn:disabled { opacity:.55; cursor:not-allowed; }
+    .opt { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid rgba(255,255,255,.10); border-radius:12px; margin:8px 0; background:var(--bg); }
+    .muted { opacity:.8; font-size:.92em; }
+  
+/* ===== FUNDO PREMIUM COM LOGO (MARCA D'ÁGUA) ===== */
+html{ background: var(--bg); }
+body{ position:relative; min-height:100vh; background: var(--bg) !important; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: url("{% static 'catalog/images/logo.jpg' %}") center center / 420px no-repeat;
+  opacity:.07;
+  filter: saturate(1.05) contrast(1.05);
+  pointer-events:none;
+  z-index:-2;
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201,162,74,.10), transparent 55%),
+    radial-gradient(circle at 50% 72%, rgba(194,31,44,.08), transparent 55%),
+    rgba(5,12,8,0.90);
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes watermarkPulse{
+  0%,100%{ transform:scale(1); opacity:.06; }
+  50%{ transform:scale(1.03); opacity:.085; }
+}
+@media (max-width: 768px){
+  body::before{ background-size: 260px; }
+}
+
+
+
+/* ===== MOBILE APP FEEL (evita "dançar" no iOS e melhora centralização) ===== */
+html, body{ overflow-x:hidden; }
+body{ min-height:100vh; }
+@supports (height: 100dvh){ body{ min-height:100dvh; } }
+
+/* iOS Safari não lida bem com background FIXO + animação; isso causa "pulos" ao rolar */
+@media (max-width: 1024px){
+  body::before, body::after{ position:absolute; }
+  body::before{ animation:none !important; }
+}
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <h2 style="margin:0;">Escolha o tamanho</h2>
+      <a href="{% url 'menu' %}">← Voltar ao cardápio</a>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <div>
+          <div style="font-weight:800; font-size:1.2em;">{{ product.name }}</div>
+          {% if product.description %}<div class="muted">{{ product.description }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <form method="post" class="card">
+      {% csrf_token %}
+      <div class="muted" style="margin-bottom:10px;">Selecione um tamanho para continuar:</div>
+
+      {% for s in sizes %}
+        <label class="opt" style="cursor:pointer;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <input type="radio" name="size" value="{{ s.size }}" {% if forloop.first %}checked{% endif %} />
+            <div>
+              <div style="font-weight:800;">{{ s.size }} ({{ s.get_size_display }})</div>
+              <div class="muted">
+                Até {{ s.max_flavors }} sabor{{ s.max_flavors|pluralize:"es" }}
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align:right;">
+            {% if s.promo_price and s.promo_price < s.price %}
+              <div class="muted" style="text-decoration:line-through;">R$ {{ s.price }}</div>
+              <div style="font-weight:900;">R$ {{ s.promo_price }}</div>
+            {% else %}
+              <div style="font-weight:900;">R$ {{ s.price }}</div>
+            {% endif %}
+          </div>
+        </label>
+      {% endfor %}
+
+      <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+        <button class="btn" type="submit" {% if not store_open %}disabled{% endif %}>Continuar</button>
+      </div>
+      {% if not store_open %}
+        <div class="muted" style="margin-top:8px;">Loja fechada no momento.</div>
+      {% endif %}
+    </form>
+  </div>
+</body>
+</html>

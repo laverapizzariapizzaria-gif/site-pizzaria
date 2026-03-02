@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pagamento PIX - Pedido #{{ order.id }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#111; color:#fff; padding:20px; }
+    .wrap { max-width: 720px; margin: 0 auto; }
+    .card { background:#1b1b1b; border:1px solid #333; border-radius:14px; padding:16px; margin-top:14px; }
+    .btn { display:inline-block; padding:10px 14px; border-radius:10px; text-decoration:none; cursor:pointer; border:1px solid transparent; }
+    .btn-primary { background:#0d6efd; color:#fff; }
+    .btn-secondary { background:#2b2b2b; color:#fff; border-color:#3a3a3a; }
+    .muted { opacity:.8; }
+    textarea { width:100%; min-height:90px; border-radius:10px; border:1px solid #333; background:#0f0f0f; color:#fff; padding:10px; }
+    img { max-width:260px; width:100%; height:auto; border-radius:12px; border:1px solid #333; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+    .badge { display:inline-block; padding:4px 10px; border-radius:999px; border:1px solid #444; background:#222; }
+    .warn { background:#3a2a00; border:1px solid #9c6a00; padding:12px; border-radius:12px; }
+  
+/* ===== FUNDO PREMIUM COM LOGO (MARCA D'ÁGUA) ===== */
+html{ background: var(--bg); }
+body{ position:relative; min-height:100vh; background: var(--bg) !important; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: url("{% static 'catalog/images/logo.jpg' %}") center center / 420px no-repeat;
+  opacity:.07;
+  filter: saturate(1.05) contrast(1.05);
+  pointer-events:none;
+  z-index:-2;
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201,162,74,.10), transparent 55%),
+    radial-gradient(circle at 50% 72%, rgba(194,31,44,.08), transparent 55%),
+    rgba(5,12,8,0.90);
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes watermarkPulse{
+  0%,100%{ transform:scale(1); opacity:.06; }
+  50%{ transform:scale(1.03); opacity:.085; }
+}
+@media (max-width: 768px){
+  body::before{ background-size: 260px; }
+}
+
+
+
+/* ===== MOBILE APP FEEL (evita "dançar" no iOS e melhora centralização) ===== */
+html, body{ overflow-x:hidden; }
+body{ min-height:100vh; }
+@supports (height: 100dvh){ body{ min-height:100dvh; } }
+
+/* iOS Safari não lida bem com background FIXO + animação; isso causa "pulos" ao rolar */
+@media (max-width: 1024px){
+  body::before, body::after{ position:absolute; }
+  body::before{ animation:none !important; }
+}
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>Pagamento via PIX</h2>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <div><strong>Pedido #{{ order.id }}</strong></div>
+          <div class="muted">Após pagar, a confirmação pode levar alguns segundos.</div>
+        </div>
+        <div class="badge">Status: <span id="statusText">{{ order.mp_status|default:"pending" }}</span></div>
+      </div>
+    </div>
+
+    {% if order.mp_qr_code_base64 %}
+      <div class="card" style="text-align:center;">
+        <img src="data:image/png;base64,{{ order.mp_qr_code_base64 }}" alt="QR Code PIX">
+      </div>
+
+      <div class="card">
+        <label for="pixcode"><strong>Copia e cola</strong></label>
+        <textarea id="pixcode" readonly>{{ order.mp_qr_code }}</textarea>
+        <div style="margin-top:10px;">
+          <button id="copyBtn" class="btn btn-primary" type="button">Copiar código PIX</button>
+          <a class="btn btn-secondary" href="{% url 'order_success' order.id %}" style="margin-left:8px;">Ver detalhes</a>
+        </div>
+      </div>
+    {% else %}
+      <div class="warn" style="margin-top:14px;">
+        Não foi possível gerar o QR Code agora. Atualize a página ou escolha outra forma de pagamento.
+      </div>
+      <div style="margin-top:12px;">
+        <a class="btn btn-secondary" href="{% url 'order_success' order.id %}">Ver detalhes do pedido</a>
+      </div>
+    {% endif %}
+
+    <p class="muted" style="margin-top:18px;">Esta página atualiza automaticamente até o pagamento ser confirmado.</p>
+  </div>
+
+<script>
+  const copyBtn = document.getElementById('copyBtn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const t = document.getElementById('pixcode');
+      try {
+        await navigator.clipboard.writeText(t.value);
+        copyBtn.textContent = "Copiado!";
+        setTimeout(()=> copyBtn.textContent = "Copiar código PIX", 1500);
+      } catch (e) {
+        t.select();
+        document.execCommand('copy');
+      }
+    });
+  }
+
+  async function poll() {
+    try {
+      const resp = await fetch("{% url 'pix_status_api' order.id %}", {cache:"no-store"});
+      const data = await resp.json();
+      const st = data.mp_status || 'pending';
+      document.getElementById('statusText').textContent = st;
+
+      if (data.paid || st === 'approved') {
+        window.location.href = "{% url 'order_success' order.id %}";
+        return;
+      }
+    } catch (e) {}
+    setTimeout(poll, 3000);
+  }
+  poll();
+</script>
+</body>
+</html>

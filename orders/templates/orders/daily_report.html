@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html>
+<head>
+  <title>Relatório Diário</title>
+  <style>
+    body { font-family: Arial; background:#111; color:#fff; padding:20px; }
+    .row { display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
+    .card { border:1px solid #333; border-radius:10px; padding:14px; margin:12px 0; }
+    table { width:100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border-bottom: 1px solid #333; padding: 10px; text-align:left; }
+    input { padding:8px; }
+    a { color:#9ad; }
+  
+/* ===== FUNDO PREMIUM COM LOGO (MARCA D'ÁGUA) ===== */
+html{ background: var(--bg); }
+body{ position:relative; min-height:100vh; background: var(--bg) !important; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: url("{% static 'catalog/images/logo.jpg' %}") center center / 420px no-repeat;
+  opacity:.07;
+  filter: saturate(1.05) contrast(1.05);
+  pointer-events:none;
+  z-index:-2;
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201,162,74,.10), transparent 55%),
+    radial-gradient(circle at 50% 72%, rgba(194,31,44,.08), transparent 55%),
+    rgba(5,12,8,0.90);
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes watermarkPulse{
+  0%,100%{ transform:scale(1); opacity:.06; }
+  50%{ transform:scale(1.03); opacity:.085; }
+}
+@media (max-width: 768px){
+  body::before{ background-size: 260px; }
+}
+
+
+
+/* ===== MOBILE APP FEEL (evita "dançar" no iOS e melhora centralização) ===== */
+html, body{ overflow-x:hidden; }
+body{ min-height:100vh; }
+@supports (height: 100dvh){ body{ min-height:100dvh; } }
+
+/* iOS Safari não lida bem com background FIXO + animação; isso causa "pulos" ao rolar */
+@media (max-width: 1024px){
+  body::before, body::after{ position:absolute; }
+  body::before{ animation:none !important; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="row">
+  <h1>📊 Relatório do dia</h1>
+  <a href="/painel/">← Voltar ao painel</a>
+</div>
+
+<div class="card">
+  <form method="get" class="row">
+    <label>Data:</label>
+    <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+    <button type="submit">Ver</button>
+  </form>
+</div>
+
+<div class="row">
+  <div class="card" style="min-width:240px;">
+    <h2 style="margin:0;">Pedidos</h2>
+    <p style="font-size:28px;margin:8px 0;">{{ total_orders }}</p>
+    <p>Cancelados: {{ canceled_count }}</p>
+  </div>
+
+  <div class="card" style="min-width:240px;">
+    <h2 style="margin:0;">Total do dia</h2>
+    <p style="font-size:28px;margin:8px 0;">R$ {{ total_value }}</p>
+    <p>Total sem cancelados: <strong>R$ {{ paid_like_value }}</strong></p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Status</h2>
+  <table>
+    <tr>
+      <th>Status</th>
+      <th>Qtd</th>
+      <th>Total</th>
+    </tr>
+    {% for s in by_status %}
+    <tr>
+      <td>{{ s.status }}</td>
+      <td>{{ s.qtd }}</td>
+      <td>R$ {{ s.total }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3">Nenhum pedido nesse dia.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+<div class="card">
+  <h2>Top itens do dia</h2>
+  <table>
+    <tr>
+      <th>Item</th>
+      <th>Quantidade</th>
+    </tr>
+    {% for i in top_items %}
+    <tr>
+      <td>{{ i.product_name }}</td>
+      <td>{{ i.qtd }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="2">Nenhum item nesse dia.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+</body>
+</html>

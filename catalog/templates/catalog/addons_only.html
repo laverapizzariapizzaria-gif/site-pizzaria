@@ -1,0 +1,257 @@
+{% load dict_extras %}
+<!DOCTYPE html>
+{% load static %}
+
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Opcionais</title>
+  <style>
+    body { font-family: Arial; background: #111; color: #fff; padding: 18px; }
+    .wrap { max-width: 760px; margin: 0 auto; }
+    .card { border:1px solid #333; border-radius: 16px; padding: 14px; margin: 12px 0; background: rgba(255,255,255,0.02); }
+    .muted { color:#aaa; font-size: 13px; }
+    .btn {
+      padding: 11px 14px;
+      border-radius: 12px;
+      border: 1px solid #2f2f2f;
+      background: #0b0b0b;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .btn:hover { border-color:#9ad; }
+    a { color:#9ad; text-decoration:none; }
+    .line { display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
+    .optrow { display:flex; justify-content:space-between; gap:10px; align-items:center; padding:10px; border:1px solid #2f2f2f; border-radius: 14px; background:#0b0b0b; }
+    input[type="number"]{ width:92px; padding:8px; border-radius:10px; border:1px solid #333; background:#0b0b0b; color:#fff; }
+    .chk { width: 22px; height: 22px; accent-color: #9ad; cursor: pointer; }
+    .badge { font-size:12px; padding:3px 9px; border-radius:999px; border:1px solid #333; color:#ddd; }
+    .err { margin-top:10px; padding:10px; border:1px solid #663; background:rgba(255,180,0,0.08); border-radius:12px; }
+  
+/* ===== FUNDO PREMIUM COM LOGO (MARCA D'ÁGUA) ===== */
+html{ background: var(--bg); }
+body{ position:relative; min-height:100vh; background: var(--bg) !important; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: url("{% static 'catalog/images/logo.jpg' %}") center center / 420px no-repeat;
+  opacity:.07;
+  filter: saturate(1.05) contrast(1.05);
+  pointer-events:none;
+  z-index:-2;
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201,162,74,.10), transparent 55%),
+    radial-gradient(circle at 50% 72%, rgba(194,31,44,.08), transparent 55%),
+    rgba(5,12,8,0.90);
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes watermarkPulse{
+  0%,100%{ transform:scale(1); opacity:.06; }
+  50%{ transform:scale(1.03); opacity:.085; }
+}
+@media (max-width: 768px){
+  body::before{ background-size: 260px; }
+}
+
+
+
+/* ===== MOBILE APP FEEL (evita "dançar" no iOS e melhora centralização) ===== */
+html, body{ overflow-x:hidden; }
+body{ min-height:100vh; }
+@supports (height: 100dvh){ body{ min-height:100dvh; } }
+
+/* iOS Safari não lida bem com background FIXO + animação; isso causa "pulos" ao rolar */
+@media (max-width: 1024px){
+  body::before, body::after{ position:absolute; }
+  body::before{ animation:none !important; }
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+    <h1 style="margin:0;">➕ Opcionais</h1>
+    <a href="{% url 'menu' %}">⬅ Voltar ao cardápio</a>
+  </div>
+
+  <div class="card">
+    <div class="line">
+      <strong>{{ product.name }}</strong>
+      <span class="muted">Base: R$ <span id="basePrice">{{ base_price }}</span></span>
+    </div>
+
+    {% if selected_size %}
+      <div class="muted" style="margin-top:6px;">
+        <span class="badge">Tamanho: {{ selected_size.get_size_display }} ({{ size_code }})</span>
+      </div>
+    {% endif %}
+
+    {% if selected_flavor_names %}
+      <div style="margin-top:10px;">
+        <div class="muted" style="margin-bottom:6px;">Sabores escolhidos:</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          {% for n in selected_flavor_names %}
+            <span class="badge">{{ n }}</span>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if error %}
+      <div class="err">{{ error }}</div>
+    {% endif %}
+  </div>
+
+
+  <form method="post" id="addonsForm" action="{% url 'cart_add' product.id %}">
+    {% csrf_token %}
+    <input type="hidden" name="size" value="{{ size_code }}" />
+    {% for fid in selected_flavors %}
+      <input type="hidden" name="flavors" value="{{ fid }}" />
+    {% endfor %}
+
+    <div class="card">
+      <div class="line">
+        <strong>Quantidade</strong>
+        <input id="itemQty" type="number" min="1" name="qty" value="1" />
+      </div>
+      <div class="muted" style="margin-top:6px;">Escolha os opcionais abaixo (se desejar). Respeite os limites por categoria.</div>
+    </div>
+
+    {% if grouped_addons %}
+      {% for group in grouped_addons %}
+        {% with cat=group.category rule=rules|get_item:cat.id %}
+          <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+              <div>
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <strong>{{ cat.name }}</strong>
+                  {% if rule and rule.enabled %}
+                    {% if rule.min_select %}<span class="badge">Mín: {{ rule.min_select }}</span>{% endif %}
+                    {% if rule.max_select %}<span class="badge">Máx: {{ rule.max_select }}</span>{% endif %}
+                  {% else %}
+                    <span class="badge">Sem regras</span>
+                  {% endif %}
+                </div>
+                <div class="muted">Selecionados: <span class="catCount" data-cat="{{ cat.id }}">0</span></div>
+              </div>
+            </div>
+
+            <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+              {% for a in group.addons %}
+                <label class="optrow">
+                  <div style="display:flex; flex-direction:column;">
+                    <span>{{ a.name }}</span>
+                    <span class="muted">
+                      {% if a.is_free %}
+                        Gratuito
+                      {% else %}
+                        + R$ {{ a.price }}
+                      {% endif %}
+                    </span>
+                  </div>
+
+                  <input
+                    type="checkbox"
+                    name="addon_{{ a.id }}"
+                    value="1"
+                    data-addon-price="{% if a.is_free %}0{% else %}{{ a.price }}{% endif %}"
+                    data-addon-cat="{{ cat.id }}"
+                    class="addonChk chk"
+                  />
+                </label>
+              {% endfor %}
+            </div>
+
+            <div class="muted" style="margin-top:10px;" id="catMsg{{ cat.id }}"></div>
+          </div>
+        {% endwith %}
+      {% endfor %}
+    {% else %}
+      <div class="card">
+        <p class="muted">Nenhum opcional cadastrado para este produto.</p>
+      </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="line">
+        <strong>Total estimado</strong>
+        <strong>R$ <span id="totalEstimated">0,00</span></strong>
+      </div>
+      <div class="muted" style="margin-top:6px;">O total final é calculado no carrinho (inclui quantidade do item).</div>
+    </div>
+
+    <span id="nonFlavorTotal" style="display:none;">{{ non_flavor_total|default:"0.00" }}</span>
+
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button class="btn" type="submit" id="submitBtn">Adicionar ao carrinho</button>
+      <a class="btn" style="display:inline-block;" href="/carrinho/">Ver carrinho</a>
+    </div>
+
+  </form>
+
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById('addonsForm');
+  if(!form) return;
+
+  const qtyInput = document.getElementById('itemQty');
+  const addonInputs = Array.from(document.querySelectorAll('.addonChk'));
+  const totalEl = document.getElementById('totalEstimated');
+  const basePrice = parseFloat((document.getElementById('basePrice')?.textContent || '0').replace(',', '.')) || 0;
+
+  // Soma acréscimos de sabores (2º/3º etc.) usando hidden inputs data-flavor-extra (opcional)
+  // Aqui o carrinho calcula corretamente; no estimado, usamos apenas base + addons.
+
+  function formatBRL(v){
+    try { return v.toFixed(2).replace('.', ','); } catch(e) { return '0,00'; }
+  }
+
+  function update(){
+    const qty = Math.max(1, parseInt(qtyInput?.value || '1', 10) || 1);
+    let addonsSum = 0;
+    const counts = {};
+
+    addonInputs.forEach(chk => {
+      if(!chk.checked) return;
+      const p = parseFloat((chk.dataset.addonPrice || '0').replace(',', '.')) || 0;
+      addonsSum += p;
+      const cat = chk.dataset.addonCat || '';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+
+    document.querySelectorAll('.catCount').forEach(el => {
+      const cat = el.dataset.cat || '';
+      el.textContent = String(counts[cat] || 0);
+    });
+
+    const nonFlavor = parseFloat((document.getElementById('nonFlavorTotal')?.textContent || '0').replace(',', '.')) || 0;
+    const total = ((basePrice + addonsSum) * qty) + nonFlavor;
+    if(totalEl) totalEl.textContent = formatBRL(total);
+  }
+
+  document.addEventListener('change', (e)=>{
+    if(e.target === qtyInput || (e.target.classList && e.target.classList.contains('addonChk'))){
+      update();
+    }
+  });
+
+  update();
+})();
+</script>
+
+</body>
+</html>

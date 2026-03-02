@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Finalizar Pedido</title>
+  <style>:root{
+  --bg:#0b1612;
+  --card:#0f221a;
+  --card2:#12271e;
+  --line:rgba(243,231,199,.14);
+  --muted:#d9cfb6;
+  --text:#ffffff;
+  --cream:#f3e7c7;
+  --gold:#c9a24a;
+  --accent:#c21f2c;   /* vermelho */
+  --green:#1b7a3a;    /* verde */
+  --btn:#1a2d23;
+  --btn2:#223b2d;
+  --danger:#b51d2c;
+}
+
+    body { font-family: Arial; background:var(--bg); color:#fff; padding:20px; }
+    a { color:#9ad; text-decoration:none; }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    .grid { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; }
+    .col { flex: 1 1 360px; }
+    .card { border:1px solid var(--line); border-radius:12px; padding:16px; margin:12px 0; background: rgba(255,255,255,0.02); }
+    label { display:block; margin-top:10px; margin-bottom:6px; color:#ddd; }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #0b0b0b;
+      color: #fff;
+      box-sizing: border-box;
+      outline: none;
+    }
+    input:focus, textarea:focus { border-color:#9ad; }
+    .muted { color:#aaa; font-size: 13px; }
+    .errbox { border:1px solid #7a2b2b; background: rgba(255, 80, 80, 0.08); color:#ffb3b3; padding:12px; border-radius:12px; margin-top:10px; }
+    .fielderror { color:#ffb3b3; font-size: 13px; margin-top:6px; }
+    .btn{ background:var(--accent); color:#fff; border:0; padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:800; }
+.btn:hover{ filter:brightness(1.05);} 
+    .row { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    ul { margin:0; padding-left:18px; }
+    li { margin:6px 0; }
+    .total { font-size: 18px; font-weight:bold; }
+    .pill { display:inline-block; padding:4px 10px; border:1px solid #444; border-radius:999px; color:#ddd; font-size:12px; }
+    .radio { display:flex; align-items:center; gap:8px; }
+    .radio input { width:auto; }
+
+    /* ===== MOBILE: evita layout "minúsculo" e coloca colunas em pilha ===== */
+    @media (max-width: 1200px){
+      .grid{ flex-direction: column; }
+      .col{ flex: 1 1 auto; }
+    }
+
+    @media (max-width: 900px){
+      body{ padding: 14px; }
+      .wrap{ max-width: 100%; }
+      .grid{ flex-direction: column; }
+      .col{ flex: 1 1 auto; }
+      h1{ font-size: 24px; }
+      h2{ font-size: 18px; }
+      input, textarea, select{ font-size: 16px; } /* evita zoom e melhora leitura no iOS */
+      .btn{ width: 100%; padding: 12px 14px; }
+    }
+
+    /* ===== BARRA DE PROGRESSO ===== */
+    .progress{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin: 0 0 14px; padding: 10px 12px; border:1px solid rgba(255,255,255,.08); border-radius: 14px; background: rgba(0,0,0,.18); }
+    .step{ flex:1; display:flex; align-items:center; gap:10px; min-width:0; }
+    .step .n{ width:26px; height:26px; border-radius:999px; display:grid; place-items:center; font-weight:900; background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.85); }
+    .step .t{ font-size:12px; color: rgba(255,255,255,.70); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .step.active .n{ background: rgba(201,162,74,.20); border-color: rgba(201,162,74,.55); color: rgba(243,231,199,.98); box-shadow: 0 0 18px rgba(201,162,74,.18); }
+    .step.active .t{ color: rgba(255,255,255,.92); font-weight:800; }
+    .divider{ width:100%; height:2px; background: rgba(255,255,255,.08); border-radius:999px; margin: 0 10px; }
+    @media (max-width:700px){
+      .divider{ display:none; }
+      .progress{ flex-wrap:wrap; }
+      .step{ flex: 1 1 46%; }
+    }
+  
+/* ===== FUNDO PREMIUM COM LOGO (MARCA D'ÁGUA) ===== */
+html{ background: var(--bg); }
+body{ position:relative; min-height:100vh; background: var(--bg) !important; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: url("{% static 'catalog/images/logo.jpg' %}") center center / 420px no-repeat;
+  opacity:.07;
+  filter: saturate(1.05) contrast(1.05);
+  pointer-events:none;
+  z-index:-2;
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201,162,74,.10), transparent 55%),
+    radial-gradient(circle at 50% 72%, rgba(194,31,44,.08), transparent 55%),
+    rgba(5,12,8,0.90);
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes watermarkPulse{
+  0%,100%{ transform:scale(1); opacity:.06; }
+  50%{ transform:scale(1.03); opacity:.085; }
+}
+@media (max-width: 768px){
+  body::before{ background-size: 260px; }
+}
+
+
+
+    /* Ajuste para inputs de rádio/checkbox (não podem ter width:100%) */
+    input[type="radio"], input[type="checkbox"]{
+      width: auto !important;
+      height: 18px;
+      min-width: 18px;
+      margin: 0;
+      accent-color: #D4AF37; /* dourado da marca */
+    }
+
+    /* Opções de entrega/retirada responsivas */
+    .delivery-options{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-start;
+      margin-top:6px;
+    }
+    .delivery-option{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(212,175,55,0.22);
+      background: rgba(18,24,20,0.60);
+      cursor:pointer;
+      user-select:none;
+    }
+    .delivery-option span{
+      font-size:14px;
+      color:#f1f1f1;
+      line-height:1.2;
+    }
+    .delivery-option:has(input:checked){
+      border-color: rgba(212,175,55,0.55);
+      box-shadow: 0 0 0 2px rgba(212,175,55,0.12) inset;
+      background: rgba(18,24,20,0.78);
+    }
+
+    @media (max-width: 520px){
+      .delivery-options{
+        flex-direction:column;
+        align-items:stretch;
+      }
+      .delivery-option{
+        width:100%;
+        justify-content:flex-start;
+      }
+    }
+
+
+/* ===== MOBILE APP FEEL (evita "dançar" no iOS e melhora centralização) ===== */
+html, body{ overflow-x:hidden; }
+body{ min-height:100vh; }
+@supports (height: 100dvh){ body{ min-height:100dvh; } }
+
+/* iOS Safari não lida bem com background FIXO + animação; isso causa "pulos" ao rolar */
+@media (max-width: 1024px){
+  body::before, body::after{ position:absolute; }
+  body::before{ animation:none !important; }
+}
+
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>✅ Finalizar pedido</h1>
+    <p class="muted"><a href="/carrinho/">← Voltar ao carrinho</a></p>
+
+    <div class="progress" aria-label="Progresso do pedido">
+      <div class="step"><div class="n">1</div><div class="t">Tamanho</div></div>
+      <div class="divider"></div>
+      <div class="step"><div class="n">2</div><div class="t">Sabores</div></div>
+      <div class="divider"></div>
+      <div class="step"><div class="n">3</div><div class="t">Carrinho</div></div>
+      <div class="divider"></div>
+      <div class="step active"><div class="n">4</div><div class="t">Confirmação</div></div>
+    </div>
+
+    <div class="grid">
+      <!-- Formulário -->
+      <div class="col">
+        <div class="card">
+          <h2 style="margin-top:0;">Seus dados</h2>
+          <p class="muted">Campos com * são obrigatórios.</p>
+
+          {% if errors %}
+            <div class="errbox">
+              <strong>Corrija os campos abaixo:</strong>
+              <ul>
+                {% for k, v in errors.items %}
+                  <li>{{ v }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <label>Nome *</label>
+            <input name="name" required placeholder="Ex: Juliandris" value="{{ form.name|default:'' }}">
+            {% if errors.name %}<div class="fielderror">{{ errors.name }}</div>{% endif %}
+
+            <label>Email *</label>
+            <input name="email" type="email" required placeholder="Ex: seuemail@gmail.com" value="{{ form.email|default:'' }}">
+            <div class="muted">Usamos seu email para criar sua conta automaticamente e salvar seus pedidos.</div>
+            {% if errors.email %}<div class="fielderror">{{ errors.email }}</div>{% endif %}
+
+            <label>CPF *</label>
+            <input name="cpf" required inputmode="numeric" maxlength="14" placeholder="Ex: 123.456.789-00" value="{{ form.cpf|default:'' }}">
+            <div class="muted">Necessário para pagamento via Mercado Pago.</div>
+            {% if errors.cpf %}<div class="fielderror">{{ errors.cpf }}</div>{% endif %}
+
+            <label>Telefone/WhatsApp *</label>
+            <input id="phone" name="phone" required inputmode="tel" placeholder="Ex: (11) 99999-9999" value="{{ form.phone|default:'' }}">
+            <div class="muted">Dica: informe com DDD.</div>
+            {% if errors.phone %}<div class="fielderror">{{ errors.phone }}</div>{% endif %}
+
+                        <label>Como você quer receber?</label>
+            {% with dt=form.delivery_type|default:"ENTREGA" %}
+            <div class="delivery-options">
+              <label class="delivery-option">
+                <input type="radio" name="delivery_type" value="ENTREGA" {% if dt == "ENTREGA" %}checked{% endif %}>
+                <span>Entrega</span>
+              </label>
+              <label class="delivery-option">
+                <input type="radio" name="delivery_type" value="RETIRADA" {% if dt == "RETIRADA" %}checked{% endif %}>
+                <span>Retirada no balcão</span>
+              </label>
+            </div>
+            {% endwith %}
+            {% if errors.delivery_type %}<div class="fielderror">{{ errors.delivery_type }}</div>{% endif %}
+
+<div id="addressWrap">
+              <label id="addressLabel">Endereço <span class="pill">obrigatório para entrega</span></label>
+              <input id="address" name="address" placeholder="Rua, número, bairro" value="{{ form.address|default:'' }}">
+              {% if errors.address %}<div class="fielderror">{{ errors.address }}</div>{% endif %}
+            </div>
+
+            <div id="refWrap">
+              <label>Ponto de referência <span class="pill">opcional</span></label>
+              <input id="reference_point" name="reference_point" placeholder="Ex: perto do mercado, portão azul..." value="{{ form.reference_point|default:'' }}">
+              {% if errors.reference_point %}<div class="fielderror">{{ errors.reference_point }}</div>{% endif %}
+            </div>
+
+            <label>Forma de pagamento *</label>
+            <select name="payment_method" id="payment_method" required>
+              {% with pm=form.payment_method|default:"PIX" %}
+              <option value="PIX" {% if pm == "PIX" %}selected{% endif %}>Pix</option>
+              <option value="CARTAO" {% if pm == "CARTAO" %}selected{% endif %}>Cartão (débito/crédito)</option>
+              <option value="DINHEIRO" {% if pm == "DINHEIRO" %}selected{% endif %}>Dinheiro</option>
+              {% endwith %}
+            </select>
+            {% if errors.payment_method %}<div class="fielderror">{{ errors.payment_method }}</div>{% endif %}
+
+            <div id="trocoWrap" style="display:none;">
+              <label>Troco para quanto? <span class="pill">opcional</span></label>
+              <input name="cash_change_for" id="cash_change_for" placeholder="Ex: 100,00" value="{{ form.cash_change_for|default:'' }}">
+              <div class="muted">Preencha apenas se pagar em dinheiro e precisar de troco.</div>
+              {% if errors.cash_change_for %}<div class="fielderror">{{ errors.cash_change_for }}</div>{% endif %}
+            </div>
+
+<label>Observações <span class="pill">opcional</span></label>
+            <textarea name="notes" rows="4" placeholder="Ex: sem cebola, sem borda...">{{ form.notes|default:'' }}</textarea>
+
+            <button class="btn" type="submit">Confirmar pedido</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Resumo -->
+      <div class="col">
+        <div class="card">
+          <h2 style="margin-top:0;">Resumo do pedido</h2>
+
+          <ul>
+            {% for i in items %}
+              <li>{{ i.display_name }} — {{ i.qty }}x <span class="muted">(R$ {{ i.price }})</span></li>
+            {% endfor %}
+          </ul>
+
+          <hr style="border:0;border-top:1px solid #333;margin:14px 0;">
+
+          <div class="row">
+            <span class="muted">Subtotal</span>
+            <span>R$ <span id="subtotalValue">{{ subtotal }}</span></span>
+          </div>
+
+          <div class="row" id="deliveryFeeRow" style="margin-top:6px; {% if not delivery_fee or delivery_fee <= 0 %}display:none;{% endif %}">
+            <span class="muted">Taxa de entrega</span>
+            <span>R$ <span id="deliveryFeeValue">{{ delivery_fee|default:"0.00" }}</span></span>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <span class="muted">Total</span>
+            <span class="total">R$ <span id="totalValue">{{ total }}</span></span>
+          </div>
+
+          <p class="muted" style="margin-top:10px;">
+            Ao confirmar, seu pedido será enviado para a pizzaria.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Máscara simples de telefone
+    (function(){
+      const el = document.getElementById("phone");
+      if(!el) return;
+
+      function mask(v){
+        const d = (v || "").replace(/\D/g, "").slice(0, 11);
+        if(d.length <= 10){
+          return d.replace(/(\d{2})(\d{0,4})(\d{0,4})/, function(_,a,b,c){
+            let out = "(" + a + ")";
+            if(b) out += " " + b;
+            if(c) out += "-" + c;
+            return out;
+          }).trim();
+        }
+        return d.replace(/(\d{2})(\d{0,5})(\d{0,4})/, function(_,a,b,c){
+          let out = "(" + a + ")";
+          if(b) out += " " + b;
+          if(c) out += "-" + c;
+          return out;
+        }).trim();
+      }
+
+      el.addEventListener("input", () => {
+        const pos = el.selectionStart;
+        el.value = mask(el.value);
+        try { el.setSelectionRange(pos, pos); } catch(e) {}
+      });
+    })();
+
+    // Esconde endereço e ponto de referência quando RETIRADA
+    (function(){
+      const wrap = document.getElementById("addressWrap");
+      const addr = document.getElementById("address");
+      const refWrap = document.getElementById("refWrap");
+      const ref = document.getElementById("reference_point");
+      const radios = document.querySelectorAll('input[name="delivery_type"]');
+
+      function apply(){
+        const selected = document.querySelector('input[name="delivery_type"]:checked');
+        const isPickup = selected && selected.value === "RETIRADA";
+        if(!wrap) return;
+
+        wrap.style.display = isPickup ? "none" : "block";
+        if(refWrap) refWrap.style.display = isPickup ? "none" : "block";
+        if(isPickup){
+          if(addr) addr.value = "";
+          if(ref) ref.value = "";
+        }
+      }
+
+      radios.forEach(r => r.addEventListener("change", apply));
+      apply();
+    })();
+  
+    // Mostra/esconde endereço conforme ENTREGA/RETIRADA
+    (function(){
+      const wrap = document.getElementById("addressWrap");
+      const addr = document.getElementById("address");
+      const refWrap = document.getElementById("refWrap");
+      const ref = document.getElementById("reference_point");
+      function update(){
+        const dt = document.querySelector('input[name="delivery_type"]:checked')?.value || "ENTREGA";
+        const isEntrega = dt === "ENTREGA";
+        if(wrap) wrap.style.display = isEntrega ? "block" : "none";
+        if(refWrap) refWrap.style.display = isEntrega ? "block" : "none";
+        if(addr) addr.toggleAttribute("required", isEntrega);
+        // Se for retirada, limpa o ponto de referência para não salvar lixo
+        if(!isEntrega && ref) ref.value = "";
+      }
+      document.querySelectorAll('input[name="delivery_type"]').forEach(r => {
+        r.addEventListener("change", update);
+      });
+      update();
+    })();
+
+  </script>
+
+  <script>
+    // Máscara simples de CPF
+    (function(){
+      const el = document.querySelector('input[name="cpf"]');
+      if(!el) return;
+      function mask(v){
+        const d = (v || "").replace(/\D/g, "").slice(0, 11);
+        return d
+          .replace(/(\d{3})(\d)/, "$1.$2")
+          .replace(/(\d{3})(\d)/, "$1.$2")
+          .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+      }
+      el.addEventListener("input", () => {
+        const pos = el.selectionStart;
+        el.value = mask(el.value);
+        try { el.setSelectionRange(pos, pos); } catch(e) {}
+      });
+    })();
+  </script>
+
+<script>
+  function toggleTroco(){
+    const sel = document.getElementById('payment_method');
+    const wrap = document.getElementById('trocoWrap');
+    if(!sel || !wrap) return;
+    wrap.style.display = (sel.value === 'DINHEIRO') ? 'block' : 'none';
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    const sel = document.getElementById('payment_method');
+    if(sel){
+      sel.addEventListener('change', toggleTroco);
+      toggleTroco();
+    }
+  });
+</script>
+
+<script>
+(function(){
+  function toNumber(pt){
+    if(!pt) return 0;
+    // aceita "12,50" ou "12.50"
+    return parseFloat(String(pt).replace(/\./g,'').replace(',', '.')) || 0;
+  }
+  function formatBR(v){
+    try{
+      return v.toFixed(2).replace('.', ',');
+    }catch(e){
+      return v;
+    }
+  }
+
+  const subtotalEl = document.getElementById('subtotalValue');
+  const feeRow = document.getElementById('deliveryFeeRow');
+  const feeEl = document.getElementById('deliveryFeeValue');
+  const totalEl = document.getElementById('totalValue');
+
+  const radios = document.querySelectorAll('input[name="delivery_type"]');
+  if(!subtotalEl || !feeEl || !totalEl || !radios.length) return;
+
+  function recalc(){
+    const subtotal = toNumber(subtotalEl.textContent);
+    const fee = toNumber(feeEl.textContent);
+    const selected = document.querySelector('input[name="delivery_type"]:checked');
+    const isEntrega = selected && selected.value === 'ENTREGA';
+
+    const appliedFee = isEntrega ? fee : 0;
+
+    if(feeRow){
+      feeRow.style.display = isEntrega && fee > 0 ? '' : 'none';
+    }
+    totalEl.textContent = formatBR(subtotal + appliedFee);
+  }
+
+  radios.forEach(r => r.addEventListener('change', recalc));
+  // recalcula ao carregar (caso venha RETIRADA selecionado)
+  recalc();
+})();
+</script>
+
+</body>
+</html>

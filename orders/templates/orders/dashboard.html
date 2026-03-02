@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html>
+<head>
+  <title>Painel de Pedidos</title>
+  <style>
+    body { font-family: Arial; background:#111; color:#fff; padding:20px; }
+    .card { border:1px solid #333; border-radius:8px; padding:14px; margin:12px 0; }
+    .row { display:flex; gap:14px; flex-wrap:wrap; align-items:center; }
+    .status { padding:4px 10px; border:1px solid #555; border-radius:999px; }
+    select, button { padding:8px; }
+    .muted { color:#aaa; }
+    .btn { padding:10px 14px; border-radius:10px; border:1px solid #555; background:#222; color:#fff; cursor:pointer; }
+    .btn-wa { border-color:#1f7a3a; }
+  
+/* ===== FUNDO PREMIUM COM LOGO (MARCA D'ÁGUA) ===== */
+html{ background: var(--bg); }
+body{ position:relative; min-height:100vh; background: var(--bg) !important; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: url("{% static 'catalog/images/logo.jpg' %}") center center / 420px no-repeat;
+  opacity:.07;
+  filter: saturate(1.05) contrast(1.05);
+  pointer-events:none;
+  z-index:-2;
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201,162,74,.10), transparent 55%),
+    radial-gradient(circle at 50% 72%, rgba(194,31,44,.08), transparent 55%),
+    rgba(5,12,8,0.90);
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes watermarkPulse{
+  0%,100%{ transform:scale(1); opacity:.06; }
+  50%{ transform:scale(1.03); opacity:.085; }
+}
+@media (max-width: 768px){
+  body::before{ background-size: 260px; }
+}
+
+
+
+/* ===== MOBILE APP FEEL (evita "dançar" no iOS e melhora centralização) ===== */
+html, body{ overflow-x:hidden; }
+body{ min-height:100vh; }
+@supports (height: 100dvh){ body{ min-height:100dvh; } }
+
+/* iOS Safari não lida bem com background FIXO + animação; isso causa "pulos" ao rolar */
+@media (max-width: 1024px){
+  body::before, body::after{ position:absolute; }
+  body::before{ animation:none !important; }
+}
+
+</style>
+</head>
+<body>
+  <h1>📦 Painel de Pedidos</h1>
+  <p class="muted">Apenas usuários da equipe (admin) podem ver esta tela.</p>
+  <p class="muted" id="autoRefreshHint" style="margin-top:-6px;">Atualização automática ativa.</p>
+ <div style="margin: 16px 0; display:flex; gap:10px; flex-wrap:wrap;">
+  <a href="/relatorio/" style="text-decoration:none;">
+    <button type="button" style="padding:10px 14px; border-radius:10px; border:1px solid #555; background:#222; color:#fff; cursor:pointer;">
+      📊 Relatório diário
+    </button>
+  </a>
+
+  <a href="/relatorio/mensal/" style="text-decoration:none;">
+    <button type="button" style="padding:10px 14px; border-radius:10px; border:1px solid #555; background:#222; color:#fff; cursor:pointer;">
+      📅 Relatório mensal
+    </button>
+  </a>
+
+  <a href="/relatorio/mensal.csv" style="text-decoration:none;">
+    <button type="button" style="padding:10px 14px; border-radius:10px; border:1px solid #555; background:#222; color:#fff; cursor:pointer;">
+      ⬇️ Baixar CSV
+    </button>
+  </a>
+
+  <a href="/relatorio/mensal.xlsx" style="text-decoration:none;">
+    <button type="button" style="padding:10px 14px; border-radius:10px; border:1px solid #555; background:#222; color:#fff; cursor:pointer;">
+      ⬇️ Baixar Excel
+    </button>
+  </a>
+
+  <a href="/cozinha/" target="_blank" rel="noopener" style="text-decoration:none;">
+    <button type="button" style="padding:10px 14px; border-radius:10px; border:1px solid #555; background:#222; color:#fff; cursor:pointer;">
+      🍳 Painel da cozinha
+    </button>
+  </a>
+</div>
+
+
+  {% for o in orders %}
+    <div class="card">
+      <div class="row">
+        <h2 style="margin:0;">Pedido #{{ o.id }}</h2>
+        <span class="status">{{ o.status }}</span>
+        <span class="muted">{{ o.created_at }}</span>
+      </div>
+
+      <p><strong>Cliente:</strong> {{ o.customer_name }} | <strong>Telefone:</strong> {{ o.phone }}</p>
+
+      {% if whatsapp_enabled %}
+        <div class="row" style="margin:10px 0;">
+          {% if o.wa_customer_link %}
+            <a href="{{ o.wa_customer_link }}" target="_blank" rel="noopener" style="text-decoration:none;">
+              <button type="button" class="btn btn-wa">🟢 WhatsApp cliente</button>
+            </a>
+          {% endif %}
+
+          {% if o.wa_store_link and whatsapp_store_configured %}
+            <a href="{{ o.wa_store_link }}" target="_blank" rel="noopener" style="text-decoration:none;">
+              <button type="button" class="btn btn-wa">📲 WhatsApp pizzaria</button>
+            </a>
+          {% endif %}
+
+          {% if not whatsapp_store_configured %}
+            <span class="muted">(Configure o WhatsApp da pizzaria em Admin → Configurações do site)</span>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <p><strong>Recebimento:</strong> {{ o.get_delivery_type_display }}</p>
+      <p><strong>Pagamento:</strong> {{ o.get_payment_method_display }}{% if o.payment_method == "DINHEIRO" and o.cash_change_for %} (troco para R$ {{ o.cash_change_for }}){% endif %}</p>
+      {% if o.address %}<p><strong>Endereço:</strong> {{ o.address }}</p>{% endif %}
+      {% if o.reference_point %}<p><strong>Ponto de referência:</strong> {{ o.reference_point }}</p>{% endif %}
+      {% if o.notes %}<p><strong>Obs:</strong> {{ o.notes }}</p>{% endif %}
+
+      <h3>Itens</h3>
+      <ul>
+        {% for item in o.items.all %}
+          <li>
+            {{ item.product_name }} — {{ item.quantity }} x R$ {{ item.unit_price }}
+            {% if item.addons.all %}
+              {% with ads=item.addons.all %}
+                {% if ads|length %}
+                  <ul class="muted" style="margin:6px 0 0 14px; padding:0;">
+                    {% for ad in ads %}
+                      <li style="list-style: circle; margin:2px 0;">
+                        + {{ ad.name }}{% if ad.qty and ad.qty|add:0 > 1 %} x{{ ad.qty }}{% endif %}
+                        {% if ad.price and ad.price|add:0 > 0 %} (R$ {{ ad.price }}){% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+              {% endwith %}
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+
+      <p><strong>Total:</strong> R$ {{ o.total }}</p>
+
+      <form method="post" action="/painel/{{ o.id }}/status/">
+        {% csrf_token %}
+        <div class="row">
+          <select name="status">
+  <option value="NOVO" {% if o.status == "NOVO" %}selected{% endif %}>NOVO</option>
+  <option value="PREPARANDO" {% if o.status == "PREPARANDO" %}selected{% endif %}>PREPARANDO</option>
+  <option value="SAIU" {% if o.status == "SAIU" %}selected{% endif %}>SAIU PARA ENTREGA</option>
+  <option value="FINALIZADO" {% if o.status == "FINALIZADO" %}selected{% endif %}>FINALIZADO</option>
+  <option value="CANCELADO" {% if o.status == "CANCELADO" %}selected{% endif %}>CANCELADO</option>
+</select>
+
+          <button type="submit">Atualizar status</button>
+        </div>
+      </form>
+    </div>
+  {% empty %}
+    <p>Nenhum pedido ainda.</p>
+  {% endfor %}
+
+<script>
+  // Alerta sonoro simples quando chega pedido novo (usa o mesmo endpoint do painel da cozinha)
+  (function(){
+    const API_URL = "/api/cozinha/";
+    const POLL_MS = 4000;
+
+    function beep() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.value = 880;
+        g.gain.value = 0.05;
+        o.connect(g); g.connect(ctx.destination);
+        o.start();
+        setTimeout(() => { o.stop(); ctx.close(); }, 180);
+      } catch(e) {}
+    }
+
+    let lastMaxId = parseInt(localStorage.getItem("dashboard_last_max_id") || "0", 10) || 0;
+    setInterval(async () => {
+      try {
+        const res = await fetch(API_URL, { cache: "no-store" });
+        const payload = await res.json();
+        const maxId = parseInt(payload.max_id || 0, 10) || 0;
+        if (maxId > lastMaxId) {
+          if (lastMaxId !== 0) beep();
+          lastMaxId = maxId;
+          localStorage.setItem("dashboard_last_max_id", String(lastMaxId));
+        }
+      } catch(e) {}
+    }, POLL_MS);
+  })();
+</script>
+
+<script>
+  // Auto-atualizar a lista de pedidos (sem atrapalhar quando você está mudando um status)
+  (function(){
+    const REFRESH_MS = 10000; // 10s
+    const hint = document.getElementById('autoRefreshHint');
+    let last = Date.now();
+
+    function isInteracting(){
+      const el = document.activeElement;
+      if (!el) return false;
+      const tag = (el.tagName || '').toUpperCase();
+      return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || el.isContentEditable;
+    }
+
+    setInterval(() => {
+      if (document.hidden) return;
+      if (isInteracting()) return;
+      if (Date.now() - last < (REFRESH_MS - 1000)) return;
+      last = Date.now();
+      if (hint) hint.textContent = 'Atualizando...';
+      window.location.reload();
+    }, REFRESH_MS);
+  })();
+</script>
+
+{% if auto_wa_link %}
+<script>
+  // Ao mudar status para "SAIU", abrimos automaticamente o WhatsApp com a mensagem pronta.
+  // (O envio ainda depende de clicar em "Enviar" no WhatsApp.)
+  (function(){
+    try {
+      const wa = decodeURIComponent("{{ auto_wa_link|escapejs }}");
+      if (wa) {
+        setTimeout(() => {
+          window.open(wa, "_blank", "noopener");
+          // remove o parâmetro da URL para não reabrir no próximo refresh
+          const url = new URL(window.location.href);
+          url.searchParams.delete('wa_client');
+          window.history.replaceState({}, document.title, url.toString());
+        }, 200);
+      }
+    } catch(e) {}
+  })();
+</script>
+{% endif %}
+
+</body>
+</html>

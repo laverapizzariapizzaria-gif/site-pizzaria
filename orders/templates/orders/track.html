@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+{% load static %}
+
+<html>
+<head>
+  <title>Acompanhar pedido</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <!-- auto refresh leve -->
+  <meta http-equiv="refresh" content="20">
+
+  <style>
+    body {
+      font-family: Arial;
+      background:#111;
+      color:#fff;
+      padding:20px;
+    }
+
+    .card {
+      border:1px solid #333;
+      border-radius:10px;
+      padding:16px;
+      margin:16px 0;
+    }
+
+    .progress {
+      background:#333;
+      border-radius:20px;
+      height:18px;
+      overflow:hidden;
+      margin:14px 0;
+    }
+
+    .bar {
+      height:100%;
+      background:#facc15; /* faixa amarela */
+      width:0%;
+      transition: width 0.6s ease;
+    }
+
+    .steps {
+      display:flex;
+      justify-content:space-between;
+      font-size:12px;
+      margin-top:6px;
+      color:#aaa;
+    }
+
+    .active {
+      color:#facc15;
+      font-weight:bold;
+    }
+
+    a { color:#9ad; }
+  
+/* ===== FUNDO PREMIUM COM LOGO (MARCA D'ÁGUA) ===== */
+html{ background: var(--bg); }
+body{ position:relative; min-height:100vh; background: var(--bg) !important; }
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background: url("{% static 'catalog/images/logo.jpg' %}") center center / 420px no-repeat;
+  opacity:.07;
+  filter: saturate(1.05) contrast(1.05);
+  pointer-events:none;
+  z-index:-2;
+  animation: watermarkPulse 8s ease-in-out infinite;
+}
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(201,162,74,.10), transparent 55%),
+    radial-gradient(circle at 50% 72%, rgba(194,31,44,.08), transparent 55%),
+    rgba(5,12,8,0.90);
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes watermarkPulse{
+  0%,100%{ transform:scale(1); opacity:.06; }
+  50%{ transform:scale(1.03); opacity:.085; }
+}
+@media (max-width: 768px){
+  body::before{ background-size: 260px; }
+}
+
+
+
+/* ===== MOBILE APP FEEL (evita "dançar" no iOS e melhora centralização) ===== */
+html, body{ overflow-x:hidden; }
+body{ min-height:100vh; }
+@supports (height: 100dvh){ body{ min-height:100dvh; } }
+
+/* iOS Safari não lida bem com background FIXO + animação; isso causa "pulos" ao rolar */
+@media (max-width: 1024px){
+  body::before, body::after{ position:absolute; }
+  body::before{ animation:none !important; }
+}
+
+
+/* ===== TRACK PAGE APP LAYOUT ===== */
+:root{
+  --card-bg: rgba(18,24,20,0.92);
+  --border: rgba(212,175,55,0.16);
+  --text-dim: rgba(255,255,255,0.82);
+}
+body{ padding: 18px !important; }
+.page{
+  max-width: 720px;
+  margin: 0 auto;
+}
+.page-header{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom: 14px;
+}
+.page-title{
+  font-size: 26px;
+  margin: 0;
+  letter-spacing: .2px;
+}
+.card{
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+.muted{ color: var(--text-dim); }
+
+.kv{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  margin-top: 8px;
+}
+.kv p{ margin:0; }
+.kv strong{ color: rgba(255,255,255,0.95); }
+
+.items{
+  list-style:none;
+  padding:0;
+  margin:0;
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
+.item-card{
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.14);
+}
+.item-title{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.item-title strong{ font-size: 16px; }
+.item-sub{ color: var(--text-dim); margin-top: 6px; font-size: 14px; }
+.addons{
+  margin: 10px 0 0;
+  padding-left: 16px;
+  color: rgba(255,255,255,0.9);
+}
+.addons li{ margin: 4px 0; }
+
+.footer-actions{
+  margin-top: 14px;
+}
+.btn-link{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  text-decoration:none;
+  border: 1px solid rgba(212,175,55,0.20);
+  background: rgba(0,0,0,0.18);
+  color: #fff;
+}
+
+/* Mobile: tipografia maior e tudo em uma coluna */
+@media (max-width: 768px){
+  body{ padding: 14px !important; }
+  .page-title{ font-size: 24px; }
+  .kv{ grid-template-columns: 1fr; }
+  .item-title strong{ font-size: 16px; }
+  .item-sub{ font-size: 15px; }
+  .btn-link{ width: 100%; justify-content:center; }
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">📦 Acompanhar pedido</h1>
+  </div>
+
+<div class="card">
+  <div class="kv">
+    <p><strong>Pedido:</strong> #{{ order.id }}</p>
+    <p><strong>Status:</strong> {{ order.get_status_display }}</p>
+    <p><strong>Recebimento:</strong> {{ order.get_delivery_type_display }}</p>
+    <p><strong>Total:</strong> R$ {{ order.total }}</p>
+    <p><strong>Data:</strong> {{ order.created_at }}</p>
+  </div>
+
+  <!-- BARRA DE PROGRESSO -->
+  <div class="progress">
+    <div class="bar"
+      style="
+        {% if order.status == 'NOVO' %}width:25%;
+        {% elif order.status == 'PREPARANDO' %}width:50%;
+        {% elif order.status == 'SAIU' %}width:75%;
+        {% elif order.status == 'FINALIZADO' %}width:100%;
+        {% endif %}
+      ">
+    </div>
+  </div>
+
+  <div class="steps">
+    <span class="{% if order.status == 'NOVO' %}active{% endif %}">Novo</span>
+    <span class="{% if order.status == 'PREPARANDO' %}active{% endif %}">Preparando</span>
+    <span class="{% if order.status == 'SAIU' %}active{% endif %}">Saiu</span>
+    <span class="{% if order.status == 'FINALIZADO' %}active{% endif %}">Finalizado</span>
+  </div>
+</div>
+
+<div class="card">
+  <h3 style="margin:0 0 12px 0;">Itens</h3>
+  <ul class="items">
+    {% for it in order.items.all %}
+      <li class="item-card">
+        <div class="item-title">
+          <strong>
+            {{ it.product_name }}{% if it.size_label %} ({{ it.size_label }}){% endif %}
+          </strong>
+          <span class="muted">{{ it.quantity }}x • R$ {{ it.unit_price }}</span>
+        </div>
+
+        {% if it.addons.all %}
+          <ul class="addons">
+            {% for ad in it.addons.all %}
+              <li>
+                + {{ ad.qty }}x {{ ad.name }}
+                {% if ad.price and ad.price > 0 %}
+                  (R$ {{ ad.price }})
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="footer-actions"><a class="btn-link" href="/">← Voltar ao cardápio</a></div>
+</div>
+
+</body>
+</html>
