@@ -401,8 +401,11 @@ def addons_view(request, product_id: int):
             ordered = [fp_map[i] for i in selected_flavor_ids if i in fp_map]
             if ordered:
                 prices = [_unit_price_for_product(fp, size_code_local) for fp in ordered]
-                total_prices = sum(prices, Decimal("0.00"))
-                return (total_prices / Decimal("2")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                # Só divide por 2 quando houver 2 ou mais sabores.
+                if len(prices) > 1:
+                    total_prices = sum(prices, Decimal("0.00"))
+                    return (total_prices / Decimal("2")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                return prices[0]
         return _unit_price_for_product(product, size_code_local)
 
     base_price = Decimal(str(product.price))

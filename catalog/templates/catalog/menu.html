@@ -318,8 +318,16 @@ body{ min-height:100vh; }
     return (chk && chk.dataset && chk.dataset.countsFlavor === 'true');
   }
 
+  // Retorna sabores selecionados em ORDEM DE SELEÇÃO (não em ordem do DOM)
+  // Cada checkbox recebe data-ts quando marcado.
   function getPickedFlavors(){
-    return getPickedAll().filter(isFlavor);
+    return getPickedAll()
+      .filter(isFlavor)
+      .sort((a,b)=>{
+        const ta = parseInt(a.dataset.ts || '0', 10);
+        const tb = parseInt(b.dataset.ts || '0', 10);
+        return ta - tb;
+      });
   }
 
   function getPickedNonFlavors(){
@@ -387,11 +395,18 @@ body{ min-height:100vh; }
 
   document.addEventListener('change', function(e){
     if(e.target && e.target.classList && e.target.classList.contains('flavorPick')){
+      // Mantém a ordem de seleção: salva um timestamp quando marca
+      if(e.target.checked){
+        e.target.dataset.ts = String(Date.now());
+      } else {
+        delete e.target.dataset.ts;
+      }
+
       const picked = getPickedFlavors();
 
       // Regra de mistura de categorias:
       // data-blockmix="true" => NÃO permitir misturar categorias
-      const blockMix = (picked[0] && picked[0].dataset.blockmix === 'true');
+      const blockMix = picked.some(el => el.dataset && el.dataset.blockmix === 'true');
 
       // mistura só se aplica a sabores
       if(blockMix && picked.length > 1 && isFlavor(e.target)){
@@ -399,6 +414,7 @@ body{ min-height:100vh; }
         // Se o usuário tentou marcar de outra categoria, desfaz e avisa
         if(e.target.dataset.cat !== baseCat){
           e.target.checked = false;
+          delete e.target.dataset.ts;
           alert('Para este tamanho, não é permitido misturar categorias de sabores.');
         }
       }

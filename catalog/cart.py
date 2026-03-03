@@ -246,8 +246,9 @@ def cart_items_and_total(request):
 
         # Sabores (meio-a-meio / multi-sabores):
         # - exibe nome composto (Sabor 1 + Sabor 2 ...)
-        # - preço final = (soma dos preços dos sabores) / 2
-        #   (regra do projeto: divide SEMPRE por 2, independente da quantidade de sabores)
+        # - regra de preço:
+        #     * 2+ sabores: (soma dos preços dos sabores) / 2
+        #     * 1 sabor: NÃO divide (usa o preço do único sabor/tamanho)
         p_name_override = p.name
         flavor_ids = []
         try:
@@ -269,8 +270,12 @@ def cart_items_and_total(request):
                 try:
                     prices = [_unit_price_for_product(fp, size_code) for fp in flavor_products]
                     if prices:
-                        total_prices = sum(prices, Decimal("0.00"))
-                        unit_price = (total_prices / Decimal("2")).quantize(Decimal("0.01"))
+                        if len(prices) >= 2:
+                            total_prices = sum(prices, Decimal("0.00"))
+                            unit_price = (total_prices / Decimal("2")).quantize(Decimal("0.01"))
+                        else:
+                            # 1 sabor: mantém o valor integral (sem dividir por 2)
+                            unit_price = Decimal(str(prices[0])).quantize(Decimal("0.01"))
                 except Exception:
                     pass
 
