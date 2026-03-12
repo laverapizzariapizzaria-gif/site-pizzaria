@@ -15,11 +15,14 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY: chaves e flags via env
-SECRET_KEY = config("SECRET_KEY", default="troque-esta-chave-em-producao")
-DEBUG = config("DEBUG", default=True, cast=bool)
+SECRET_KEY = config("SECRET_KEY", default="django-insecure-dev-only-change-me-4r7m2n9p8q1x5z6k3v0b")
+DEBUG = config("DEBUG", default=False, cast=bool)
 
 # Ex: ALLOWED_HOSTS="meuapp.onrender.com,meudominio.com"
-ALLOWED_HOSTS = [h.strip() for h in config("ALLOWED_HOSTS", default="*").split(",") if h.strip()]
+_default_allowed_hosts = ["127.0.0.1", "localhost"]
+if RENDER_EXTERNAL_HOSTNAME := os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip():
+    _default_allowed_hosts.append(RENDER_EXTERNAL_HOSTNAME)
+ALLOWED_HOSTS = [h.strip() for h in config("ALLOWED_HOSTS", default=",".join(_default_allowed_hosts)).split(",") if h.strip()]
 
 # Ex: CSRF_TRUSTED_ORIGINS="https://meuapp.onrender.com,https://meudominio.com"
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in config("CSRF_TRUSTED_ORIGINS", default="").split(",") if o.strip()]
@@ -116,7 +119,7 @@ MEDIA_URL = "/media/"
 
 # (Opcional) permite setar um caminho manual por env (ex.: /var/data/media)
 MEDIA_ROOT_ENV = os.environ.get("MEDIA_ROOT", "").strip()
-RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
 
 if MEDIA_ROOT_ENV:
     MEDIA_ROOT = Path(MEDIA_ROOT_ENV)
@@ -141,5 +144,12 @@ MERCADOPAGO_WEBHOOK_SECRET = os.environ.get("MERCADOPAGO_WEBHOOK_SECRET", "troqu
 # Render / HTTPS behind proxy
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
+
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = "DENY"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

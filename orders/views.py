@@ -16,6 +16,8 @@ from django.conf import settings
 from .services.mercadopago_pix import criar_pagamento_pix, consultar_pagamento
 from .services.whatsapp import normalize_phone_to_wa, render_message, wa_link
 from django.contrib.auth import get_user_model
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 
 def _get_site_settings() -> SiteSettings:
@@ -76,6 +78,11 @@ def checkout_view(request):
             errors["name"] = "Informe seu nome."
         if not form["email"]:
             errors["email"] = "Informe seu email para salvar seus pedidos."
+        else:
+            try:
+                validate_email(form["email"])
+            except ValidationError:
+                errors["email"] = "Informe um email válido."
         # CPF é usado no payer.identification do Mercado Pago
         cpf_digits = (form["cpf"] or "").replace(".", "").replace("-", "").replace(" ", "")
         if not cpf_digits:
@@ -216,7 +223,7 @@ def checkout_view(request):
 
 
 def order_success(request, order_id):
-    order = Order.objects.get(id=order_id)
+    order = get_object_or_404(Order.objects.select_related("user"), id=order_id)
     pix_error = request.session.pop("pix_error", None)
     s = _get_site_settings()
 
@@ -290,6 +297,7 @@ def kitchen_orders_api(request):
                 "customer_name": o.customer_name,
                 "phone": o.phone,
                 "address": o.address,
+                "reference_point": o.reference_point,
                 "notes": o.notes,
                 "payment_method": o.payment_method,
                 "payment_method_label": o.get_payment_method_display(),

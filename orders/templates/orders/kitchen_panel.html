@@ -123,23 +123,43 @@ body{ min-height:100vh; }
   const API_URL = "/api/cozinha/";
   const POLL_MS = 3000;
 
-  // Som via WebAudio (sem arquivo externo)
+
+  // Toca campainha real por até 4 segundos
+  const ALERT_SOUND_URL = "{% static 'sounds/campainha.mp3' %}";
+  let activeAudio = null;
+
+  function stopAlertSound() {
+    if (!activeAudio) return;
+    try {
+      activeAudio.pause();
+      activeAudio.currentTime = 0;
+    } catch (e) {
+      console.log("audio stop error", e);
+    }
+    activeAudio = null;
+  }
+
   function beep() {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = ctx.createOscillator();
-      const g = ctx.createGain();
-      o.type = "sine";
-      o.frequency.value = 880;
-      g.gain.value = 0.05; // volume
-      o.connect(g);
-      g.connect(ctx.destination);
-      o.start();
-      setTimeout(() => { o.stop(); ctx.close(); }, 180);
+      stopAlertSound();
+      const audio = new Audio(ALERT_SOUND_URL);
+      audio.preload = "auto";
+      audio.loop = true;
+      activeAudio = audio;
+
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.then === "function") {
+        playPromise.catch((e) => console.log("audio play error", e));
+      }
+
+      setTimeout(() => {
+        if (activeAudio === audio) stopAlertSound();
+      }, 4000);
     } catch (e) {
       console.log("beep error", e);
     }
   }
+
 
   function fmtDate(iso) {
     try {
